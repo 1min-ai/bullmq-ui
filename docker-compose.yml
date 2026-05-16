@@ -20,7 +20,7 @@ services:
     ports:
       - "${PORT:-3001}:3001"
     environment:
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - REDIS_URL=${DOCKER_REDIS_URL:-redis://redis:6379}
       - PORT=3001
       - HOST=0.0.0.0
       - NODE_ENV=production

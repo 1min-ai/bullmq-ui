@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
+import { serveStatic } from "hono/bun";
 import connectionRoutes from "./routes/connection.js";
 import queuesRoutes from "./routes/queues.js";
 import jobsRoutes from "./routes/jobs.js";
@@ -83,6 +82,10 @@ ensureConnected()
     console.warn(`[bullmq-studio] Server will retry on first request`);
   });
 
-serve({ fetch: app.fetch, port: PORT, hostname: HOST }, (info) => {
-  console.log(`[bullmq-studio] Server running at http://${HOST}:${info.port}`);
-});
+console.log(`[bullmq-studio] Server running at http://${HOST}:${PORT}`);
+
+export default {
+  port: PORT,
+  hostname: HOST,
+  fetch: app.fetch,
+};

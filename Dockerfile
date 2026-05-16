@@ -32,7 +32,7 @@ RUN bun install --frozen-lockfile --production
 COPY apps/server ./apps/server
 
 # Bundle server to single file
-RUN cd apps/server && bun build src/index.ts --outdir dist --target bun --minify
+RUN cd apps/server && NODE_ENV=production bun build src/index.ts --outdir dist --target bun --minify
 
 # ── Stage 3: production runner ─────────────────────────────────────────────
 FROM oven/bun:1.3.14-alpine AS runner
@@ -45,7 +45,7 @@ RUN addgroup -S bullmq && adduser -S bullmq -G bullmq
 COPY --from=server-builder /app/apps/server/dist ./server/dist
 
 # Copy built client assets to be served as static files
-COPY --from=client-builder /app/apps/client/dist ./server/public
+COPY --from=client-builder /app/apps/client/dist ./public
 
 # Copy node_modules needed at runtime (bullmq, ioredis, hono)
 COPY --from=server-builder /app/node_modules ./node_modules
