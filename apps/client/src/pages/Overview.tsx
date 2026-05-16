@@ -81,7 +81,7 @@ export default function Overview() {
           </SelectContent>
         </Select>
       </Header>
-
+      <RedisInfoCard />
       {isLoading ? (
         <OverviewSkeleton />
       ) : queues?.length === 0 ? (
@@ -101,7 +101,6 @@ export default function Overview() {
             <SlowestJobsTable jobs={metrics.slowestJobs} />
             <FailingJobTypesTable jobTypes={metrics.failingJobTypes} />
           </div>
-          <RedisInfoCard />
         </div>
       ) : null}
     </div>
