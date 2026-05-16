@@ -2,7 +2,7 @@
 
 A lightweight, self-hosted UI for managing BullMQ queues and jobs. Built with Bun, Hono, React, and shadcn/ui.
 
-<video src="bullmq.mp4" controls muted loop width="100%"></video>
+![BullMQ Studio](bullmq.gif)
 
 ## Features
 
