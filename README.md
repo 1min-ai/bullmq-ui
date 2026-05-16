@@ -2,7 +2,7 @@
 
 A lightweight, self-hosted UI for managing BullMQ queues and jobs. Built with Bun, Hono, React, and shadcn/ui.
 
-![Dark UI with queue overview, job stats, and throughput charts]
+![Dark UI with queue overview, job stats, and throughput charts](bullmq.mp4)
 
 ## Features
 
