@@ -11,6 +11,10 @@ import { ensureConnected } from "./services/bullmq-service.js";
 
 const app = new Hono();
 
+const AUTH_USER = process.env.BULLMQ_USERNAME;
+const AUTH_PASS = process.env.BULLMQ_PASSWORD;
+const AUTH_ENABLED = !!(AUTH_USER && AUTH_PASS);
+
 app.use("*", logger());
 app.use(
   "/api/*",
@@ -20,6 +24,35 @@ app.use(
     allowHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// Public — always accessible regardless of auth config
+app.get("/api/auth/enabled", (c) => c.json({ enabled: AUTH_ENABLED }));
+
+// Basic auth middleware for all other /api/* routes
+if (AUTH_ENABLED) {
+  app.use("/api/*", async (c, next) => {
+    if (c.req.path === "/api/auth/enabled") return next();
+
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader?.startsWith("Basic ")) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    try {
+      const decoded = atob(authHeader.slice(6));
+      const colonIdx = decoded.indexOf(":");
+      const user = decoded.slice(0, colonIdx);
+      const pass = decoded.slice(colonIdx + 1);
+      if (user !== AUTH_USER || pass !== AUTH_PASS) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+    } catch {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    return next();
+  });
+}
 
 // Health check
 app.get("/health", (c) => c.json({ ok: true }));

@@ -8,6 +8,7 @@ import { ThroughputChart } from "@/components/overview/ThroughputChart";
 import { ProcessingTimeChart } from "@/components/overview/ProcessingTimeChart";
 import { SlowestJobsTable } from "@/components/overview/SlowestJobsTable";
 import { FailingJobTypesTable } from "@/components/overview/FailingJobTypesTable";
+import { RedisInfoCard } from "@/components/overview/RedisInfoCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -100,6 +101,7 @@ export default function Overview() {
             <SlowestJobsTable jobs={metrics.slowestJobs} />
             <FailingJobTypesTable jobTypes={metrics.failingJobTypes} />
           </div>
+          <RedisInfoCard />
         </div>
       ) : null}
     </div>

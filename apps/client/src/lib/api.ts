@@ -1,15 +1,31 @@
 import type { Job, JobSummary, Queue, OverviewMetrics } from "@/types";
+import { clearCredentials, getAuthHeader } from "@/lib/auth";
 
 const BASE = "/api";
+
+let redirectingToLogin = false;
 
 async function request<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const authHeader = getAuthHeader();
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(authHeader ? { Authorization: authHeader } : {}),
+      ...(options?.headers as Record<string, string> | undefined),
+    },
   });
+  if (res.status === 401) {
+    if (!redirectingToLogin) {
+      redirectingToLogin = true;
+      clearCredentials();
+      window.location.href = "/login";
+    }
+    throw new Error("Unauthorized");
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);

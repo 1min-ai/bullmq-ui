@@ -1,16 +1,18 @@
-import { NavLink, Link, useLocation } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Layers,
   Briefcase,
   Server,
   Activity,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { queuesApi } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -21,6 +23,13 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { authEnabled, logout } = useAuth();
+
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
 
   const { data: queues } = useQuery({
     queryKey: ["queues"],
@@ -98,6 +107,18 @@ export function Sidebar() {
           </>
         )}
       </ScrollArea>
+
+      {authEnabled && (
+        <div className="p-2 border-t border-sidebar-border">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sign out
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

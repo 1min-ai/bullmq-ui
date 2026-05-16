@@ -47,6 +47,22 @@ REDIS_URL=redis://:yourpassword@localhost:6379
 REDIS_URL=rediss://user:pass@hostname:6380
 ```
 
+---
+
+## Redis Compatibility
+
+| Provider | URL format | Notes |
+|---|---|---|
+| **Local** | `redis://localhost:6379` | No auth |
+| **Self-hosted (password)** | `redis://:password@host:6379` | Standard Redis auth |
+| **Self-hosted (user + pass)** | `redis://user:password@host:6379` | ACL-based auth |
+| **Valkey** | `redis://host:6379` or `rediss://host:6380` | Drop-in Redis replacement; TLS optional |
+| **Redis Cloud** | `rediss://default:password@host.redis.io:6380` | Upstash, Aiven, Redis Enterprise — always TLS |
+| **AWS ElastiCache** | `rediss://host.cache.amazonaws.com:6379` | TLS only; IAM auth not supported |
+| **Docker** | `redis://host.docker.internal:6379` | From inside a container |
+
+Set `REDIS_URL` in your `.env` file. The server automatically enables TLS when the URL scheme is `rediss://`.
+
 ### 3. Start in development mode
 
 Runs the server (port 3001) and the Vite dev server (port 5173) concurrently with hot reload:
