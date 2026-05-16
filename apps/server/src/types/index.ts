@@ -60,6 +60,7 @@ export interface JobSummary {
   delay?: number;
   priority?: number;
   parentId?: string;
+  repeatJobKey?: string;
 }
 
 export interface JobQueryOptions {

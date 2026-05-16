@@ -204,7 +204,7 @@ class BullMQService {
     try {
       const client = await queue.client;
       const jobKey = queue.toKey(jobId);
-      const [name, timestamp, progress, attemptsMade, processedOn, finishedOn, failedReason, delay, priority, parent] =
+      const [name, timestamp, progress, attemptsMade, processedOn, finishedOn, failedReason, delay, priority, parent, rjk] =
         await client.hmget(
           jobKey,
           "name",
@@ -217,6 +217,7 @@ class BullMQService {
           "delay",
           "priority",
           "parent",
+          "rjk",
         );
 
       const status = await queue.getJobState(jobId);
@@ -241,6 +242,7 @@ class BullMQService {
         delay: delay ? parseInt(delay, 10) : undefined,
         priority: priority ? parseInt(priority, 10) : undefined,
         parentId,
+        repeatJobKey: rjk || undefined,
       };
     } catch {
       return null;
@@ -299,6 +301,9 @@ class BullMQService {
     const queue = this.getOrCreate(queueName);
     const job = await queue.getJob(jobId);
     if (!job) throw new Error(`Job ${jobId} not found`);
+    if (job.repeatJobKey) {
+      await queue.removeRepeatableByKey(job.repeatJobKey);
+    }
     await job.remove();
   }
 

@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Layers,
@@ -31,14 +31,14 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-20 flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2.5 px-4 border-b border-sidebar-border">
+      <Link to="/" className="flex h-14 items-center gap-2.5 px-4 border-b border-sidebar-border hover:opacity-80 transition-opacity">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
           <Server className="h-4 w-4 text-primary" />
         </div>
         <span className="font-semibold text-sm text-sidebar-foreground">
-          BullMQ Studio
+          BullMQ
         </span>
-      </div>
+      </Link>
 
       <ScrollArea className="flex-1 py-3">
         <nav className="px-2 space-y-0.5">

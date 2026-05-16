@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Briefcase, Search } from "lucide-react";
+import { Briefcase, Search, RefreshCw } from "lucide-react";
 import { jobsApi, queuesApi } from "@/lib/api";
 import { Header } from "@/components/layout/Header";
 import { AddJobDialog } from "@/components/jobs/AddJobDialog";
@@ -15,11 +15,22 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, RotateCcw, Trash2, ArrowUp } from "lucide-react";
 import { formatRelative } from "@/lib/utils";
 import type { JobStatus, JobSummary } from "@/types";
+
+function formatNextRun(job: JobSummary): string | null {
+  if (job.status !== "delayed" || !job.delay) return null;
+  const nextRun = job.timestamp + job.delay;
+  const diff = nextRun - Date.now();
+  if (diff <= 0) return "now";
+  if (diff < 60_000) return `in ${Math.ceil(diff / 1000)}s`;
+  if (diff < 3_600_000) return `in ${Math.ceil(diff / 60_000)}m`;
+  if (diff < 86_400_000) return `in ${Math.floor(diff / 3_600_000)}h`;
+  return new Date(nextRun).toLocaleDateString();
+}
 
 const STATUSES: { value: JobStatus | "all"; label: string }[] = [
   { value: "all", label: "All statuses" },
@@ -70,11 +81,13 @@ function JobActions({ job }: { job: JobSummary }) {
             <ArrowUp className="h-4 w-4" /> Promote
           </DropdownMenuItem>
         )}
+        {job.repeatJobKey && <DropdownMenuSeparator />}
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"
           onClick={() => removeMutation.mutate()}
         >
-          <Trash2 className="h-4 w-4" /> Remove
+          <Trash2 className="h-4 w-4" />
+          {job.repeatJobKey ? "Remove + Stop Schedule" : "Remove"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -166,6 +179,7 @@ export default function Jobs() {
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Queue</th>
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
                   <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Attempts</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Next Run</th>
                   <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Added</th>
                   <th className="w-10" />
                 </tr>
@@ -181,12 +195,24 @@ export default function Jobs() {
                         {job.id}
                       </Link>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs">{job.name}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs">{job.name}</span>
+                        {job.repeatJobKey && (
+                          <span title="Scheduled (repeating)">
+                            <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">{job.queueName}</td>
                     <td className="px-4 py-2.5">
                       <JobStatusBadge status={job.status} />
                     </td>
                     <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">{job.attemptsMade}</td>
+                    <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                      {formatNextRun(job) ?? <span className="text-border">—</span>}
+                    </td>
                     <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
                       {formatRelative(job.timestamp)}
                     </td>

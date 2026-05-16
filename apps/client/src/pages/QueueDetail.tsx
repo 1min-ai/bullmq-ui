@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, Pause, Play, Eraser, Trash2 } from "lucide-react";
+import { ChevronLeft, Pause, Play, Eraser, Trash2, RefreshCw } from "lucide-react";
 import { queuesApi, jobsApi } from "@/lib/api";
 import { Header } from "@/components/layout/Header";
 import { AddJobDialog } from "@/components/jobs/AddJobDialog";
@@ -20,7 +20,18 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatRelative } from "@/lib/utils";
-import type { JobStatus } from "@/types";
+import type { JobStatus, JobSummary } from "@/types";
+
+function formatNextRun(job: JobSummary): string | null {
+  if (job.status !== "delayed" || !job.delay) return null;
+  const nextRun = job.timestamp + job.delay;
+  const diff = nextRun - Date.now();
+  if (diff <= 0) return "now";
+  if (diff < 60_000) return `in ${Math.ceil(diff / 1000)}s`;
+  if (diff < 3_600_000) return `in ${Math.ceil(diff / 60_000)}m`;
+  if (diff < 86_400_000) return `in ${Math.floor(diff / 3_600_000)}h`;
+  return new Date(nextRun).toLocaleDateString();
+}
 
 const STATUSES: { value: JobStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -163,6 +174,7 @@ export default function QueueDetail() {
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Name</th>
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
                   <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Attempts</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Next Run</th>
                   <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Added</th>
                 </tr>
               </thead>
@@ -177,12 +189,24 @@ export default function QueueDetail() {
                         {job.id}
                       </Link>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs">{job.name}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs">{job.name}</span>
+                        {job.repeatJobKey && (
+                          <span title="Scheduled (repeating)">
+                            <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-2.5">
                       <JobStatusBadge status={job.status} />
                     </td>
                     <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
                       {job.attemptsMade}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                      {formatNextRun(job) ?? <span className="text-border">—</span>}
                     </td>
                     <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
                       {formatRelative(job.timestamp)}
