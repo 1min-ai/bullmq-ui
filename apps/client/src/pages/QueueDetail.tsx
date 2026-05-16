@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, Pause, Play, Eraser, Trash2, RefreshCw } from "lucide-react";
+import { ChevronLeft, Pause, Play, Eraser, Trash2, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { queuesApi, jobsApi } from "@/lib/api";
 import { Header } from "@/components/layout/Header";
 import { AddJobDialog } from "@/components/jobs/AddJobDialog";
@@ -21,6 +21,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatRelative } from "@/lib/utils";
 import type { JobStatus, JobSummary } from "@/types";
+
+type SortField = "nextRun" | "timestamp";
+
+function SortIcon({ field, sortField, sortOrder }: { field: SortField; sortField: SortField | null; sortOrder: "asc" | "desc" }) {
+  if (sortField !== field) return <ChevronsUpDown className="h-3 w-3 opacity-40" />;
+  return sortOrder === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />;
+}
 
 function formatNextRun(job: JobSummary): string | null {
   if (job.status !== "delayed" || !job.delay) return null;
@@ -50,6 +57,17 @@ export default function QueueDetail() {
   const [status, setStatus] = useState<JobStatus | "all">("all");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [cleanOpen, setCleanOpen] = useState(false);
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  }
 
   const { data: queue, isLoading: loadingQueue, isFetching, refetch } = useQuery({
     queryKey: ["queues", queueName],
@@ -95,6 +113,14 @@ export default function QueueDetail() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const sortedJobs = jobs && sortField
+    ? [...jobs].sort((a, b) => {
+        const aVal = sortField === "timestamp" ? a.timestamp : (a.timestamp + (a.delay ?? 0));
+        const bVal = sortField === "timestamp" ? b.timestamp : (b.timestamp + (b.delay ?? 0));
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+      })
+    : jobs;
 
   return (
     <div className="space-y-6">
@@ -174,12 +200,28 @@ export default function QueueDetail() {
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Name</th>
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
                   <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Attempts</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Next Run</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Added</th>
+                  <th
+                    className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    onClick={() => handleSort("nextRun")}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <SortIcon field="nextRun" sortField={sortField} sortOrder={sortOrder} />
+                      Next Run
+                    </div>
+                  </th>
+                  <th
+                    className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    onClick={() => handleSort("timestamp")}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <SortIcon field="timestamp" sortField={sortField} sortOrder={sortOrder} />
+                      Added
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {jobs?.map((job) => (
+                {sortedJobs?.map((job) => (
                   <tr key={job.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-2.5">
                       <Link

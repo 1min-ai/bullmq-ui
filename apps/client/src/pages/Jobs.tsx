@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Briefcase, Search, RefreshCw } from "lucide-react";
+import { Briefcase, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { jobsApi, queuesApi } from "@/lib/api";
 import { Header } from "@/components/layout/Header";
 import { AddJobDialog } from "@/components/jobs/AddJobDialog";
@@ -20,6 +20,13 @@ import {
 import { MoreHorizontal, RotateCcw, Trash2, ArrowUp } from "lucide-react";
 import { formatRelative } from "@/lib/utils";
 import type { JobStatus, JobSummary } from "@/types";
+
+type SortField = "nextRun" | "timestamp";
+
+function SortIcon({ field, sortField, sortOrder }: { field: SortField; sortField: SortField | null; sortOrder: "asc" | "desc" }) {
+  if (sortField !== field) return <ChevronsUpDown className="h-3 w-3 opacity-40" />;
+  return sortOrder === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />;
+}
 
 function formatNextRun(job: JobSummary): string | null {
   if (job.status !== "delayed" || !job.delay) return null;
@@ -98,6 +105,17 @@ export default function Jobs() {
   const [status, setStatus] = useState<JobStatus | "all">("all");
   const [queueName, setQueueName] = useState("all");
   const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  }
 
   const { data: queues } = useQuery({ queryKey: ["queues"], queryFn: queuesApi.list });
 
@@ -117,6 +135,14 @@ export default function Jobs() {
     j.id.includes(search) ||
     j.queueName.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const sorted = filtered && sortField
+    ? [...filtered].sort((a, b) => {
+        const aVal = sortField === "timestamp" ? a.timestamp : (a.timestamp + (a.delay ?? 0));
+        const bVal = sortField === "timestamp" ? b.timestamp : (b.timestamp + (b.delay ?? 0));
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+      })
+    : filtered;
 
   return (
     <div className="space-y-6">
@@ -161,7 +187,7 @@ export default function Jobs() {
         <div className="space-y-2">
           {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-12" />)}
         </div>
-      ) : filtered?.length === 0 ? (
+      ) : sorted?.length === 0 ? (
         <EmptyState
           icon={<Briefcase className="h-12 w-12" />}
           title="No jobs found"
@@ -169,7 +195,7 @@ export default function Jobs() {
         />
       ) : (
         <>
-          <p className="text-xs text-muted-foreground">{filtered?.length} jobs</p>
+          <p className="text-xs text-muted-foreground">{sorted?.length} jobs</p>
           <div className="rounded-lg border border-border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
@@ -179,13 +205,29 @@ export default function Jobs() {
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Queue</th>
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
                   <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Attempts</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Next Run</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Added</th>
+                  <th
+                    className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    onClick={() => handleSort("nextRun")}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <SortIcon field="nextRun" sortField={sortField} sortOrder={sortOrder} />
+                      Next Run
+                    </div>
+                  </th>
+                  <th
+                    className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+                    onClick={() => handleSort("timestamp")}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <SortIcon field="timestamp" sortField={sortField} sortOrder={sortOrder} />
+                      Added
+                    </div>
+                  </th>
                   <th className="w-10" />
                 </tr>
               </thead>
               <tbody>
-                {filtered?.map((job) => (
+                {sorted?.map((job) => (
                   <tr key={`${job.queueName}-${job.id}`} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-2.5">
                       <Link

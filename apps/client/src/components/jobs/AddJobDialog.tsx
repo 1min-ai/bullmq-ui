@@ -22,7 +22,16 @@ const schema = z.object({
   delay: z.string().optional(),
   priority: z.string().optional(),
   attempts: z.string().optional(),
-});
+  scheduleType: z.enum(["none", "cron", "interval"]),
+  cronPattern: z.string().optional(),
+  intervalMs: z.string().optional(),
+}).refine(
+  (d) => d.scheduleType !== "cron" || (d.cronPattern && d.cronPattern.trim().length > 0),
+  { message: "Cron pattern is required", path: ["cronPattern"] },
+).refine(
+  (d) => d.scheduleType !== "interval" || (d.intervalMs && !isNaN(Number(d.intervalMs)) && Number(d.intervalMs) > 0),
+  { message: "Interval must be a positive number", path: ["intervalMs"] },
+);
 
 type FormValues = z.infer<typeof schema>;
 
@@ -49,10 +58,14 @@ export function AddJobDialog({ defaultQueue }: Props) {
       delay: "",
       priority: "",
       attempts: "",
+      scheduleType: "none",
+      cronPattern: "",
+      intervalMs: "",
     },
   });
 
   const selectedQueue = watch("queueName");
+  const scheduleType = watch("scheduleType");
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -64,6 +77,11 @@ export function AddJobDialog({ defaultQueue }: Props) {
           delay: values.delay ? Number(values.delay) : undefined,
           priority: values.priority ? Number(values.priority) : undefined,
           attempts: values.attempts ? Number(values.attempts) : undefined,
+          repeat: values.scheduleType === "cron"
+            ? { pattern: values.cronPattern }
+            : values.scheduleType === "interval"
+            ? { every: Number(values.intervalMs) }
+            : undefined,
         },
       }),
     onSuccess: (res) => {
@@ -138,6 +156,41 @@ export function AddJobDialog({ defaultQueue }: Props) {
               <Input type="number" placeholder="1" {...register("attempts")} />
             </div>
           </div>
+
+          <div className="space-y-1.5">
+            <Label>Schedule</Label>
+            <Select
+              value={scheduleType}
+              onValueChange={(v) => setValue("scheduleType", v as "none" | "cron" | "interval")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">One-time</SelectItem>
+                <SelectItem value="cron">Cron pattern</SelectItem>
+                <SelectItem value="interval">Interval</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {scheduleType === "cron" && (
+            <div className="space-y-1.5">
+              <Label>Cron Pattern</Label>
+              <Input placeholder="0 * * * *" className="font-mono" {...register("cronPattern")} />
+              <p className="text-xs text-muted-foreground">Standard 5-field cron expression (min hour day month weekday)</p>
+              {errors.cronPattern && <p className="text-xs text-destructive">{errors.cronPattern.message}</p>}
+            </div>
+          )}
+
+          {scheduleType === "interval" && (
+            <div className="space-y-1.5">
+              <Label>Interval (ms)</Label>
+              <Input type="number" placeholder="60000" {...register("intervalMs")} />
+              <p className="text-xs text-muted-foreground">Repeat every N milliseconds</p>
+              {errors.intervalMs && <p className="text-xs text-destructive">{errors.intervalMs.message}</p>}
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
