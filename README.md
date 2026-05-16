@@ -1,4 +1,4 @@
-# BullMQ Studio
+# BullMQ UI
 
 A lightweight, self-hosted UI for managing BullMQ queues and jobs. Built with Bun, Hono, React, and shadcn/ui.
 
