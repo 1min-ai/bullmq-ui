@@ -93,40 +93,6 @@ docker run -p 3001:3001 -e REDIS_URL=redis://host.docker.internal:6379 bullmq-st
 
 ---
 
-## Environment Variables
-
-| Variable           | Default                    | Description                          |
-|--------------------|----------------------------|--------------------------------------|
-| `REDIS_URL`        | `redis://localhost:6379`   | Redis connection URL                 |
-| `PORT`             | `3001`                     | Server port                          |
-| `HOST`             | `0.0.0.0`                  | Server bind address                  |
-| `NODE_ENV`         | `development`              | `production` disables CORS wildcard  |
-| `BULLMQ_USERNAME`  | —                          | Enable HTTP basic auth (username)    |
-| `BULLMQ_PASSWORD`  | —                          | Enable HTTP basic auth (password)    |
-
----
-
-## Project Structure
-
-```
-bullmq-studio/
-├── apps/
-│   ├── client/          # Vite + React + shadcn/ui
-│   │   └── src/
-│   │       ├── components/
-│   │       ├── pages/
-│   │       ├── lib/
-│   │       └── types/
-│   └── server/          # Bun + Hono + BullMQ
-│       └── src/
-│           ├── routes/
-│           ├── services/
-│           └── types/
-├── Dockerfile
-├── docker-compose.yml
-└── package.json
-```
-
 ## Tech Stack
 
 | Layer    | Technology                              |

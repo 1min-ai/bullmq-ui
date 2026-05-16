@@ -484,7 +484,8 @@ let _instance: BullMQService | null = null;
 export function getService(): BullMQService {
   if (!_instance) {
     const url = process.env.REDIS_URL ?? "redis://localhost:6379";
-    _instance = new BullMQService(url);
+    const prefix = process.env.BULLMQ_PREFIX ?? DEFAULT_PREFIX;
+    _instance = new BullMQService(url, prefix);
   }
   return _instance;
 }
